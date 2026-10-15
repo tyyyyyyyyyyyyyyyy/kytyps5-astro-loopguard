@@ -281,11 +281,11 @@ export KYTY_LOOP_GUARD_LIMIT=50000     # 0 = guard off; default 1000000
 
 ## 8. Publikasi: repo GitHub
 
-- Repo: **https://github.com/tyyyyyyyyyyyyyyyy/kyty-astro-loopguard**
+- Repo: **https://github.com/tyyyyyyyyyyyyyyyy/kytyps5-astro-loopguard**
 - Isi: README (ringkasan + quickstart), `docs/FINDINGS.md` (dokumen ini),
   `patches/` (diff + script patch + sumber 3 file yang diubah),
   `screenshots/` (bukti masuk gameplay), release **v1.0**
-  (`https://github.com/tyyyyyyyyyyyyyyyy/kyty-astro-loopguard/releases/tag/v1.0`)
+  (`https://github.com/tyyyyyyyyyyyyyyyy/kytyps5-astro-loopguard/releases/tag/v1.0`)
   = binary siap pakai + SHA-256.
 - 🤖 **Semua edit (loop guard, launcher, dokumen) dilakukan oleh AI —
   DeepSeek V4.1 Flash** (model `deepseek-v4.1-flash-free`, via OpenCode).
