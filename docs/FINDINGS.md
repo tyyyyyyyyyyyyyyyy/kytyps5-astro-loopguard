@@ -349,3 +349,9 @@ Vulkan pipeline cache: initialized empty
 (bukan lagi `disabled (dirty build)` → patch force bekerja). Run ini sedang
 mengisi cache; **tutup jendela game dengan cara normal** saat selesai supaya
 `_PipelineCache/PPSA01325.bin` tersimpan untuk run-run berikutnya.
+
+**Hasil run fast pertama (17:47–17:53)**: splash + menu **18–24 fps**; masuk
+gameplay **±6 menit**; adegan awal (Astro idle) **~7 fps**; **0 GPU hang**.
+Warmup terasa lebih singkat — sebagian karena `--graphics-debug-dump` dimatikan
+(I/O dump hilang), sebagian fluktuasi scene. Exit bersih belum dilakukan; cache
+akan tersimpan saat jendela game ditutup normal.
