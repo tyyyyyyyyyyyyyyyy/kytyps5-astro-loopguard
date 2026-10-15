@@ -387,3 +387,16 @@ Untuk membuktikan GPU sehat & bisa jenuh (bukan "GPU tidak dipakai"):
   Astro membuat GPU hanya ±20–70% karena CPU-nya (Xeon E3-1230v3) yang jadi botol
   leher** — sesuai §9.1. Di layar, HUD MangoHud sekarang bisa memverifikasi ini
   live saat main (run berikutnya).
+
+### 9.7 Run 1080p fullscreen + HUD (18:35) ✅
+
+- Launcher baru: **`run_astro_1080p.sh`** — `--screen-width 1920 --screen-height 1080
+  --fullscreen`, HUD MangoHud font 24 (GPU/CPU+temp, RAM/VRAM, fps/frametime).
+- Hasil: menu ~20 fps; **gameplay 4–5 fps**, **GPU 36–65%** (naik dari 720p karena
+  beban ×2.25), CPU tetap 150–160% di 4–5 thread → **tetap CPU-bound**; fps tidak
+  berubah berarti ketika resolusi dinaikkan (bukti tambahan bottleneck = CPU).
+- Bukti visual: `screenshots/hud-1080p-maxgpu.png` (Astro di gameplay, HUD menyala).
+- ⚠️ Catatan: run 720p sebelumnya (mulai 17:46) **crash saat ditutup** — SIGSEGV di
+  `runtimeLinker.cpp:730` pada proses shutdown (bukan GPU hang) sehingga pipeline
+  cache **tidak tersimpan**. Shutdown bersih = syarat cache disimpan; bug shutdown
+  ini perlu ditelusuri di sesi lain.

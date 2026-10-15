@@ -113,7 +113,7 @@ screenshots/
   astro-gameplay.png                         ← bukti masuk gameplay
   mangohud-hud.png                           ← HUD MangoHud (contoh)
   gpu-98-percent-mangohud.png                ← bukti GPU 98% (stress test)
-  hud-1080p-maxgpu.png                       ← HUD di run 1080p fullscreen (GPU ~48%, 20 FPS)
+  hud-1080p-maxgpu.png                       ← HUD di gameplay 1080p fullscreen (GPU ~36%, 5 FPS)
 licenses/                                    ← lisensi upstream KytyPS5 (GPL-2.0 / MIT)
 ```
 
