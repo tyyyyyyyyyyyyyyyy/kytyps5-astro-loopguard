@@ -55,8 +55,8 @@ Bukti sebelum/sesudah (register dump RADV):
 ## Cara pakai
 
 ```bash
-# 1) Ambil binary siap pakai dari Release v1.0:
-#    https://github.com/tyyyyyyyyyyyyyyyy/kyty-astro-loopguard/releases/tag/v1.0
+# 1) Ambil binary siap pakai dari Release v1.1 (cache ON):
+#    https://github.com/tyyyyyyyyyyyyyyyy/kyty-astro-loopguard/releases/tag/v1.1
 #    (atau build ulang — lihat bawah)
 # 2) Jalankan (launcher sudah set env + argumen yang benar):
 KYTY_LOOP_GUARD_LIMIT=50000 ./patches/run_astro_loopguard.sh
