@@ -13,6 +13,10 @@ export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json
 export RADV_DEBUG=hang                 # dump jika hang
 export KYTY_LOOP_GUARD_LIMIT="${KYTY_LOOP_GUARD_LIMIT:-50000}"
 export KYTY_FORCE_PIPELINE_CACHE=1     # <- baru: aktifkan pipeline cache
+# HUD on-screen (MangoHud sudah terpasang di box ini). Matikan: MANGOHUD=0 ./run_astro_fast.sh
+# Toggle saat main: Shift_R+F12 (sembunyikan/tampilkan), F12 (mode fps saja).
+export MANGOHUD="${MANGOHUD:-1}"
+export MANGOHUD_CONFIG="${MANGOHUD_CONFIG:-fps,gpu_stats,gpu_temp,cpu_stats,cpu_temp,ram,vram,position=top-right,font_size=18}" 
 LOG="${1:-/mnt/share/tyo/astro_fast.log}"
 exec /mnt/share/tyo/kyty_latest/build/kyty_emulator_loopguard \
   --game /mnt/ulfa/astrobot/PPSA01325 --screen-width 1280 --screen-height 720 \

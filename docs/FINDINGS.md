@@ -355,3 +355,17 @@ gameplay **±6 menit**; adegan awal (Astro idle) **~7 fps**; **0 GPU hang**.
 Warmup terasa lebih singkat — sebagian karena `--graphics-debug-dump` dimatikan
 (I/O dump hilang), sebagian fluktuasi scene. Exit bersih belum dilakukan; cache
 akan tersimpan saat jendela game ditutup normal.
+
+### 9.5 HUD on-screen: MangoHud (17:52) ✅
+
+- **MangoHud sudah terpasang** di box (paket 0.6.9.1, Ubuntu 24.04;
+  layer `/usr/share/vulkan/implicit_layer.d/MangoHud.x86_64.json`) — tidak perlu
+  instalasi apa pun.
+- Terverifikasi via `MANGOHUD=1 vkcube`: overlay tampil (GPU 43%, 53 °C, CPU%,
+  VRAM/RAM, fps + frametime) — screenshot bukti ada di sesi kerja.
+- `run_astro_fast.sh` sekarang menyalakan `MANGOHUD=1` + config ringkas
+  (kanan-atas). **Toggle saat main**: `Shift_R+F12` (HUD on/off), `F12` (fps saja).
+  Matikan total: `MANGOHUD=0 ./run_astro_fast.sh`.
+- Cara baca angka: **GPU% rendah + fps rendah = CPU-bound** (kasus Astro ini);
+  GPU ~99% + fps rendah = GPU-bound (turunkan resolusi/efek baru berguna).
+- Bonus: title bar jendela Kyty sudah menampilkan `frame: N, fps: M` real-time.
