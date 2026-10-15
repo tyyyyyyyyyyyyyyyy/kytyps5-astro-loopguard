@@ -1,6 +1,6 @@
 # ASTRO BOT — Loop Guard RDNA1: Temuan & Status (15 Okt 2026)
 
-Dokumen ini merangkum analisis + patch "loop guard" di SPIR-V emitter Kyty untuk
+Dokumen ini merangkum analisis + patch "loop guard" di SPIR-V emitter KytyPS5 untuk
 mengatasi GPU hang pada **ASTRO's PLAYROOM** di **Radeon RX 5700 (RDNA1/Navi10)**,
 box `192.168.18.225` (user `tyo`).
 
@@ -46,7 +46,7 @@ KYTY_LOOP_GUARD_LIMIT=50000 /mnt/share/tyo/patches/kyty_emulator_loopguard_works
 ## 1. Ringkasan (TL;DR)
 
 - **Akar masalah**: shader compute guest (BVH traversal) memiliki loop yang **tidak
-  pernah selesai** di RX 5700 — wave berputar terus. Kyty **tidak punya** mekanisme
+  pernah selesai** di RX 5700 — wave berputar terus. KytyPS5 **tidak punya** mekanisme
   fault-retry/redispatch, jadi dispatch yang nyangkut tidak pernah bisa "di-unstick"
   → ring gfx timeout → `vkQueueSubmit failed: ErrorDeviceLost (-4)`.
 - **Perbaikan**: *loop guard* di SPIR-V emitter — setiap loop header guest diberi
@@ -73,7 +73,7 @@ KYTY_LOOP_GUARD_LIMIT=50000 /mnt/share/tyo/patches/kyty_emulator_loopguard_works
    konsisten pada RDNA1) → loop tak berujung.
 3. Wave berputar selamanya → command processor tidak pernah "retire" → RADV/kernel
    mendeteksi hang (~10 s) → dengan `RADV_DEBUG=hang` proses di-abort setelah dump.
-4. Di Kyty **tidak ada** jalur retry/redispatch untuk recovery — satu-satunya cara
+4. Di KytyPS5 **tidak ada** jalur retry/redispatch untuk recovery — satu-satunya cara
    adalah membatasi loop di level emitter.
 
 ---
@@ -112,7 +112,7 @@ Ini **INVALID** menurut `ValidateStructuredSelections` (SPIRV-Tools):
 > structured"*.
 
 Gejala: `spirv-val`: `error: line 2400: Selection must be structured —
-OpBranchConditional %1131 %1133 %39`, dan Kyty fatal di
+OpBranchConditional %1131 %1133 %39`, dan KytyPS5 fatal di
 `pipelineCache.cpp:344` (`--shader-validation true`).
 
 **Konsekuensi desain**: jangan menambah cabang/blok baru untuk keluar loop —
@@ -269,7 +269,7 @@ export KYTY_LOOP_GUARD_LIMIT=50000     # 0 = guard off; default 1000000
 - `kyty_latest` **butuh** patch barycentric (§5) — tanpa itu error
   `Could not find suitable device: fragmentShaderBarycentric is not supported`
   (fatal di `vulkanWindow.cpp:1001`).
-- Pipeline cache Kyty **disabled** untuk dirty build → tiap run mengompilasi ulang
+- Pipeline cache KytyPS5 **disabled** untuk dirty build → tiap run mengompilasi ulang
   semua shader (~8 menit untuk ~160 shader). Jangan aktifkan paksa: cache dari
   emitter lama akan **tanpa guard**.
 - RADV dump + abort: dengan `RADV_DEBUG=hang`, proses di-abort ~4 s setelah dump →
@@ -312,14 +312,14 @@ thread + sinkronisasi) memang yang menentukan waktu per frame.
 ### 9.2 Kesimpulan
 
 - **2–3 fps itu batas CPU** (Xeon E3-1230v3, 4c/8t 2013) untuk judul PS5 60 fps +
-  overhead HLE Kyty. GPU menganggur → **turunkan resolusi/matikan efek tidak
-  menaikkan fps**. Naik signifikan = CPU lebih cepat (Zen3+) atau optimisasi Kyty.
+  overhead HLE KytyPS5. GPU menganggur → **turunkan resolusi/matikan efek tidak
+  menaikkan fps**. Naik signifikan = CPU lebih cepat (Zen3+) atau optimisasi KytyPS5.
 - Yang **bisa** dihemat: kompilasi shader (warmup ~8–10 menit tiap run + hitch
   saat shader baru muncul) → **pipeline cache**.
 
 ### 9.3 Pipeline cache ON (patch `KYTY_FORCE_PIPELINE_CACHE`)
 
-- Kyty mematikan pipeline cache untuk build non-Release ATAU build "dirty";
+- KytyPS5 mematikan pipeline cache untuk build non-Release ATAU build "dirty";
   log run 17:18: `Vulkan pipeline cache: disabled (dirty build)`.
 - Patch (`pipelineCache.cacheforce.diff`, backup `.cacheforce.bak`): gate tsb
   **dilewati bila env `KYTY_FORCE_PIPELINE_CACHE=1`** (tanpa env, perilaku default).
@@ -368,7 +368,7 @@ akan tersimpan saat jendela game ditutup normal.
   Matikan total: `MANGOHUD=0 ./run_astro_fast.sh`.
 - Cara baca angka: **GPU% rendah + fps rendah = CPU-bound** (kasus Astro ini);
   GPU ~99% + fps rendah = GPU-bound (turunkan resolusi/efek baru berguna).
-- Bonus: title bar jendela Kyty sudah menampilkan `frame: N, fps: M` real-time.
+- Bonus: title bar jendela KytyPS5 sudah menampilkan `frame: N, fps: M` real-time.
 
 ### 9.6 Bukti GPU bisa 98% (stress test 18:16) ✅
 

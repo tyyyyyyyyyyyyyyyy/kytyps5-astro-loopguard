@@ -1,7 +1,7 @@
 #!/bin/bash
 # Launcher "FAST" - recipe harian yang lebih cepat.
 # Perbedaan vs run_astro_loopguard.sh:
-#   - KYTY_FORCE_PIPELINE_CACHE=1  : pipeline cache Kyty ON (build non-Release pun jalan).
+#   - KYTY_FORCE_PIPELINE_CACHE=1  : pipeline cache KytyPS5 ON (build non-Release pun jalan).
 #       Run pertama tetap kompilasi penuh (~8-10 menit) lalu cache DISIMPAN saat exit bersih
 #       (tutup jendela game / keluar normal - JANGAN kill -9).
 #       Run berikutnya memuat cache -> tanpa warmup 8 menit & tanpa hitch kompilasi.

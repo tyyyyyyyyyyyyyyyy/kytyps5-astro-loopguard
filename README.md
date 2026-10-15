@@ -1,12 +1,12 @@
-# kyty-astro-loopguard
+# kytyps5-astro-loopguard
 
 **ASTRO's Playroom masuk game mode @ 2–3 fps — Linux Xubuntu, Radeon RX 5700 (RDNA1).**
 
-Patch **loop guard** untuk [Kyty](https://github.com/InoriRus/Kyty) (PS5 emulator) yang
+Patch **loop guard** untuk [KytyPS5](https://github.com/KytyPS5/KytyPS5) (PS5 translation layer, berbasis [Kyty](https://github.com/InoriRus/Kyty)) yang
 menghentikan **GPU hang** saat level loading — sekarang game **bisa dimainkan**
 (Astro Bot berjalan di level), bukan lagi hang di frame ~4.400.
 
-![ASTRO's Playroom gameplay di Kyty — RX 5700 / Xubuntu](screenshots/astro-gameplay.png)
+![ASTRO's Playroom gameplay di KytyPS5 — RX 5700 / Xubuntu](screenshots/astro-gameplay.png)
 
 > 🤖 **Semua edit (patch kode, script, dokumen) dilakukan oleh AI — DeepSeek V4.1 Flash**
 > (model `deepseek-v4.1-flash-free`, via [OpenCode](https://opencode.ai)).
@@ -18,7 +18,7 @@ menghentikan **GPU hang** saat level loading — sekarang game **bisa dimainkan*
 | | |
 |---|---|
 | Game | ASTRO's PLAYROOM (`PPSA01325`) |
-| Emulator | Kyty @ `99358054` + patch di repo ini |
+| Emulator | KytyPS5 @ `99358054` + patch di repo ini |
 | OS | **Xubuntu / Linux** (X11) |
 | CPU | Xeon E3-1230 v3 |
 | GPU | AMD Radeon RX 5700 8 GB (**RDNA1 / Navi10**) |
@@ -33,7 +33,7 @@ menghentikan **GPU hang** saat level loading — sekarang game **bisa dimainkan*
 1. Shader compute guest (vider: BVH traversal) memiliki **loop yang tidak pernah
    selesai** di RDNA1 — keluar loop tergantung ballot wave-wide yang tidak terpenuhi
    → wave berputar → **GPU hang** (`vkQueueSubmit failed: ErrorDeviceLost (-4)`).
-2. Kyty **tidak punya** mekanisme fault-retry/redispatch, jadi dispatch yang nyangkut
+2. KytyPS5 **tidak punya** mekanisme fault-retry/redispatch, jadi dispatch yang nyangkut
    tidak pernah bisa di-recover. Satu-satunya jalan: batasi loop di level emitter.
 3. **Loop guard** (patch di repo ini): setiap loop header guest diberi counter
    iterasi per-lane; setelah `KYTY_LOOP_GUARD_LIMIT` iterasi, **semua cabang keluar
@@ -56,14 +56,14 @@ Bukti sebelum/sesudah (register dump RADV):
 
 ```bash
 # 1) Ambil binary siap pakai dari Release v1.1 (cache ON):
-#    https://github.com/tyyyyyyyyyyyyyyyy/kyty-astro-loopguard/releases/tag/v1.1
+#    https://github.com/tyyyyyyyyyyyyyyyy/kytyps5-astro-loopguard/releases/tag/v1.1
 #    (atau build ulang — lihat bawah)
 # 2) Jalankan (launcher sudah set env + argumen yang benar):
 KYTY_LOOP_GUARD_LIMIT=50000 ./patches/run_astro_loopguard.sh
 ```
 
 > 💨 **Recipe harian (lebih cepat)** — `run_astro_fast.sh`: mengaktifkan
-> *pipeline cache* Kyty (`KYTY_FORCE_PIPELINE_CACHE=1`, patch
+> *pipeline cache* KytyPS5 (`KYTY_FORCE_PIPELINE_CACHE=1`, patch
 > `pipelineCache.cacheforce.diff`) dan melepas dump debug. Run pertama tetap
 > kompilasi penuh (~8-10 menit); **tutup jendela game (exit bersih)** agar cache
 > tersimpan — run berikutnya mulai hampir instan, tanpa hitch kompilasi.
@@ -106,13 +106,15 @@ patches/
     BUILD.sha256                             ← SHA-256 binary release
   run_astro_loopguard.sh                     ← launcher (recipe asli, debug ON)
   run_astro_fast.sh                          ← launcher harian (pipeline cache ON + HUD)
+  run_astro_1080p.sh                         ← launcher 1080p fullscreen + HUD (GPU maksimal)
   pressj.sh                                  ← auto-press ✕ (opsional)
   gpu_burn_demo.sh                           ← demo "GPU 99%": clpeak + vkmark + MangoHud
 screenshots/
   astro-gameplay.png                         ← bukti masuk gameplay
   mangohud-hud.png                           ← HUD MangoHud (contoh)
   gpu-98-percent-mangohud.png                ← bukti GPU 98% (stress test)
-licenses/                                    ← lisensi upstream Kyty (GPL-2.0 / MIT)
+  hud-1080p-maxgpu.png                       ← HUD di run 1080p fullscreen (GPU ~48%, 20 FPS)
+licenses/                                    ← lisensi upstream KytyPS5 (GPL-2.0 / MIT)
 ```
 
 ---
@@ -128,8 +130,9 @@ Baca **[docs/FINDINGS.md](docs/FINDINGS.md)** — analisis lengkap (Bahasa Indon
 
 ## Lisensi
 
-- Kode patch di repo ini adalah *derivative work* dari **Kyty** (© InoriRus) —
-  ikuti lisensi upstream: **GPL-2.0**, sebagian komponen MIT.
+- Kode patch di repo ini adalah *derivative work* dari **KytyPS5**
+  (proyek yang berbasis [Kyty](https://github.com/InoriRus/Kyty) asli, © InoriRus) —
+  ikuti lisensi upstream: **GPL-2.0** (Kyty asli: MIT).
   Salinan lisensi upstream ada di [`licenses/`](licenses/).
 - Konten game (ASTRO's Playroom) **tidak** termasuk di repo ini.
-- Binary di Release dibangun dari Kyty `99358054` + patch di repo ini.
+- Binary di Release dibangun dari KytyPS5 `99358054` + patch di repo ini.

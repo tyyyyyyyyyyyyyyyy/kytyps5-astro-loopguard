@@ -39,7 +39,7 @@ mesh, **bukan** dari loop guard.
 `OpBranchConditional` **harus** punya minimal satu target yang sudah "seen" oleh
 reverse-postorder walk (praktis: merge/continue loop itu sendiri). Desain v1 yang
 menambah blok `OpReturn` baru di dalam loop → error *"Selection must be structured"*
-→ Kyty fatal di `pipelineCache.cpp:344`. Desain final (v2) **tidak menambah edge/blok**
+→ KytyPS5 fatal di `pipelineCache.cpp:344`. Desain final (v2) **tidak menambah edge/blok**
 — hanya meracuni kondisi cabang keluar yang sudah ada.
 
 ## 5. Hasil akhir
