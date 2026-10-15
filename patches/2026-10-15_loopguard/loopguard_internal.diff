@@ -1,0 +1,28 @@
+--- /mnt/share/tyo/kyty_latest/src/graphics/shader/recompiler/backend/spirv/spirvEmitterInternal.h.loopguard.bak	2026-10-15 16:35:21.837495540 +0700
++++ /mnt/share/tyo/kyty_latest/src/graphics/shader/recompiler/backend/spirv/spirvEmitterInternal.h	2026-10-15 16:54:48.236946215 +0700
+@@ -152,6 +152,25 @@
+ 	std::vector<InputBinding>  inputs;
+ 	std::vector<OutputBinding> outputs;
+ 	std::vector<uint32_t>      interface_variables;
++
++	// [LOCAL PATCH RDNA1] Loop guard: counter iterasi per loop header guest.
++	// Counter dinaikkan sekali per iterasi; begitu melewati LoopGuardLimit()
++	// semua cabang keluar loop (yang menuju blok merge) dipaksa keluar. Ini
++	// mencegah guest loop tanpa batas iterasi menggantungkan GPU
++	// (ring gfx timeout -> device lost). Cabang yang sudah ada di-"racuni"
++	// kondisinya supaya struktur SPIR-V tetap valid (tanpa predecessor OpPhi
++	// baru dan tanpa blok keluar tambahan di dalam loop).
++	struct LoopGuardHeader {
++		const IR::Block* header   = nullptr;
++		uint32_t         variable = 0;
++	};
++	struct LoopGuardExit {
++		const IR::Block* site     = nullptr;
++		const IR::Block* merge    = nullptr;
++		size_t           variable = 0;
++	};
++	std::vector<LoopGuardHeader> loop_guard_headers;
++	std::vector<LoopGuardExit>   loop_guard_exits;
+ };
+ 
+ uint32_t TypeVoid(EmitterState& state);

@@ -1,0 +1,177 @@
+--- /mnt/share/tyo/kyty_latest/src/graphics/shader/recompiler/backend/spirv/spirvEmitterProgram.cpp.loopguard.bak	2026-10-15 16:35:21.838481867 +0700
++++ /mnt/share/tyo/kyty_latest/src/graphics/shader/recompiler/backend/spirv/spirvEmitterProgram.cpp	2026-10-15 16:54:48.238032721 +0700
+@@ -4,6 +4,7 @@
+ 
+ #include <algorithm>
+ #include <bit>
++#include <cstdlib>
+ #include <functional>
+ #include <optional>
+ #include <type_traits>
+@@ -83,6 +84,94 @@
+ 	}
+ }
+ 
++// [LOCAL PATCH RDNA1] Batas iterasi loop guest (0 = guard dimatikan).
++// Env: KYTY_LOOP_GUARD_LIMIT, default 1000000 iterasi per loop per invokasi.
++// Guest loop tanpa batas iterasi membuat wave berputar selamanya; ring gfx lalu
++// timeout dan seluruh device hilang (vkQueueSubmit ErrorDeviceLost).
++uint32_t LoopGuardLimit() {
++	static const uint32_t limit = [] {
++		if (const char* env = std::getenv("KYTY_LOOP_GUARD_LIMIT")) {
++			return static_cast<uint32_t>(std::strtoul(env, nullptr, 10));
++		}
++		return 1000000u;
++	}();
++	return limit;
++}
++
++void EmitLoopGuardIncrement(EmitterState& state, uint32_t guard_variable) {
++	auto&      builder = state.builder;
++	const auto loaded  = builder.AllocateId();
++	builder.AddFunction(spv::OpLoad, TypeU32(state), loaded, guard_variable);
++	const auto incremented = builder.AllocateId();
++	builder.AddFunction(spv::OpIAdd, TypeU32(state), incremented, loaded, ConstantU32(state, 1));
++	builder.AddFunction(spv::OpStore, guard_variable, incremented);
++}
++
++uint32_t EmitLoopGuardOver(EmitterState& state, uint32_t guard_variable) {
++	auto&      builder = state.builder;
++	const auto loaded  = builder.AllocateId();
++	builder.AddFunction(spv::OpLoad, TypeU32(state), loaded, guard_variable);
++	const auto over = builder.AllocateId();
++	builder.AddFunction(spv::OpUGreaterThan, TypeBool(state), over, loaded,
++	                    ConstantU32(state, LoopGuardLimit()));
++	return over;
++}
++
++// Susun guard: satu counter per loop header guest + daftar cabang keluar loop
++// (blok di dalam loop yang bercabang berkondisi menuju blok merge).
++void CollectLoopGuardSites(EmitterState& state) {
++	state.loop_guard_headers.clear();
++	state.loop_guard_exits.clear();
++	if (LoopGuardLimit() == 0) {
++		return;
++	}
++	for (const auto* header: state.program.blocks) {
++		const auto& term = header->terminator;
++		if (!term.loop_header || term.merge_block == nullptr || term.continue_block == nullptr) {
++			continue;
++		}
++		const auto* merge = term.merge_block;
++		// Blok di dalam loop = reachable dari header tanpa melewati merge.
++		std::unordered_set<const IR::Block*> inside;
++		std::vector<const IR::Block*>       pending {header};
++		while (!pending.empty()) {
++			const auto* current = pending.back();
++			pending.pop_back();
++			if (current == nullptr || current == merge || inside.count(current) != 0) {
++				continue;
++			}
++			inside.insert(current);
++			for (const auto* next: current->ImmSuccessors()) {
++				pending.push_back(next);
++			}
++		}
++		std::vector<EmitterState::LoopGuardExit> found;
++		for (const auto* block: state.program.blocks) {
++			if (inside.count(block) == 0) {
++				continue;
++			}
++			const auto& block_term = block->terminator;
++			if (block_term.kind != CFG::TerminatorKind::ConditionalBranch ||
++			    block_term.true_block == nullptr || block_term.false_block == nullptr) {
++				continue;
++			}
++			if (block_term.true_block == merge || block_term.false_block == merge) {
++				found.push_back(EmitterState::LoopGuardExit {block, merge, 0});
++			}
++		}
++		if (found.empty()) {
++			// Loop tanpa cabang keluar berkondisi: tidak bisa dijaga dengan aman.
++			continue;
++		}
++		const auto index = state.loop_guard_headers.size();
++		state.loop_guard_headers.push_back(EmitterState::LoopGuardHeader {header, state.builder.AllocateId()});
++		for (auto& exit: found) {
++			exit.variable = index;
++			state.loop_guard_exits.push_back(exit);
++		}
++	}
++}
++
+ void EmitReturn(ValueEmitContext& ctx) {
+ 	EmitKillIfPixelValidMaskInactive(ctx.state);
+ 	ctx.state.builder.AddFunction(spv::OpReturn);
+@@ -105,6 +194,18 @@
+ 		}
+ 	};
+ 
++	auto& state = ctx.state;
++
++	// [LOCAL PATCH RDNA1] Loop guard: naikkan counter iterasi loop ini.
++	if (term.loop_header) {
++		for (const auto& entry: state.loop_guard_headers) {
++			if (entry.header == block) {
++				EmitLoopGuardIncrement(state, entry.variable);
++				break;
++			}
++		}
++	}
++
+ 	switch (term.kind) {
+ 		case CFG::TerminatorKind::Branch: {
+ 			const auto* target = term.true_block;
+@@ -125,7 +226,27 @@
+ 			}
+ 			const auto condition = ctx.Def(block->condition);
+ 			emit_merge();
+-			ctx.state.builder.AddFunction(spv::OpBranchConditional, condition,
++			auto branch_condition = condition;
++			// [LOCAL PATCH RDNA1] Paksa keluar loop bila counter iterasi sudah
++			// melewati batas: cabang menuju blok merge dibuat selalu diambil.
++			for (const auto& exit: state.loop_guard_exits) {
++				if (exit.site != block) {
++					continue;
++				}
++				const auto over = EmitLoopGuardOver(state, state.loop_guard_headers[exit.variable].variable);
++				const auto next = state.builder.AllocateId();
++				if (term.true_block == exit.merge) {
++					state.builder.AddFunction(spv::OpLogicalOr, TypeBool(state), next,
++					                          branch_condition, over);
++				} else {
++					const auto in_range = state.builder.AllocateId();
++					state.builder.AddFunction(spv::OpLogicalNot, TypeBool(state), in_range, over);
++					state.builder.AddFunction(spv::OpLogicalAnd, TypeBool(state), next,
++					                          branch_condition, in_range);
++				}
++				branch_condition = next;
++			}
++			ctx.state.builder.AddFunction(spv::OpBranchConditional, branch_condition,
+ 			                              true_block->Definition(), false_block->Definition());
+ 			return;
+ 		}
+@@ -672,6 +793,10 @@
+ 			high.scratch_u32_variable = state.builder.AllocateId();
+ 		}
+ 	}
++	// [LOCAL PATCH RDNA1] Siapkan counter loop guard + titik keluarnya.
++	if (!state.program.dispatcher_fallback) {
++		CollectLoopGuardSites(state);
++	}
+ 	state.builder.AddFunction(spv::OpFunction, TypeVoid(state),
+ 	                          state.mesh_guest_func != 0 ? state.mesh_guest_func : state.main_func,
+ 	                          spv::FunctionControlMaskNone, TypeFunction(state));
+@@ -695,6 +820,12 @@
+ 		                          TypePointer(state, spv::StorageClassFunction, TypeU32(state)),
+ 		                          state.pixel_valid_mask_variable, spv::StorageClassFunction);
+ 	}
++	for (const auto& entry: state.loop_guard_headers) {
++		// Initializer 0: counter di-reset setiap pemanggilan fungsi.
++		state.builder.AddFunction(spv::OpVariable,
++		                          TypePointer(state, spv::StorageClassFunction, TypeU32(state)),
++		                          entry.variable, spv::StorageClassFunction, ConstantU32(state, 0));
++	}
+ 	for (uint32_t half = 0; half < state.lane_count; half++) {
+ 		auto& lane = half == 0 ? ctx : high;
+ 		if (state.program.dispatcher_fallback) {
