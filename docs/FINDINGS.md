@@ -289,3 +289,50 @@ export KYTY_LOOP_GUARD_LIMIT=50000     # 0 = guard off; default 1000000
   = binary siap pakai + SHA-256.
 - 🤖 **Semua edit (loop guard, launcher, dokumen) dilakukan oleh AI —
   DeepSeek V4.1 Flash** (model `deepseek-v4.1-flash-free`, via OpenCode).
+
+---
+
+## 9. Analisis FPS & tuning (15 Okt 17:30–17:45)
+
+### 9.1 Fakta pengukuran (run gameplay, 1280×720, limit 50k)
+
+| Metrik | Nilai | Arti |
+|---|---|---|
+| fps gameplay (stabil) | **~2.5 fps** | batas nyata di box ini |
+| GPU `gpu_busy_percent` | avg **22%**, max 84% | **GPU bukan bottleneck** (menganggur) |
+| CPU proses | 169–177% (dari 800%) | beban di CPU |
+| Thread terpanas (sample 3 dtk) | main `kyty_emulator_l` **65%**, `SceSndzAudioOut` **39%**, ~11× `tbb_thead` @5% (~50%) | audio (SDL3) + job-system guest + main thread |
+| RAM | 8.9 GiB RSS, swap 5 MiB | tidak ada thrash |
+| CPU freq / suhu | 3.4–3.6 GHz / **51 °C** | bukan thermal throttle |
+
+**Uji renice** (thread audio/TBB/DrawThread → nice 15, live di PID berjalan):
+fps **tidak berubah** (2.50) → bukan masalah rebutan CPU; rantai utama (main
+thread + sinkronisasi) memang yang menentukan waktu per frame.
+
+### 9.2 Kesimpulan
+
+- **2–3 fps itu batas CPU** (Xeon E3-1230v3, 4c/8t 2013) untuk judul PS5 60 fps +
+  overhead HLE Kyty. GPU menganggur → **turunkan resolusi/matikan efek tidak
+  menaikkan fps**. Naik signifikan = CPU lebih cepat (Zen3+) atau optimisasi Kyty.
+- Yang **bisa** dihemat: kompilasi shader (warmup ~8–10 menit tiap run + hitch
+  saat shader baru muncul) → **pipeline cache**.
+
+### 9.3 Pipeline cache ON (patch `KYTY_FORCE_PIPELINE_CACHE`)
+
+- Kyty mematikan pipeline cache untuk build non-Release ATAU build "dirty";
+  log run 17:18: `Vulkan pipeline cache: disabled (dirty build)`.
+- Patch (`pipelineCache.cacheforce.diff`, backup `.cacheforce.bak`): gate tsb
+  **dilewati bila env `KYTY_FORCE_PIPELINE_CACHE=1`** (tanpa env, perilaku default).
+- Binary baru: `/mnt/share/tyo/patches/kyty_emulator_loopguard_cacheforce_2026-10-15`
+  (sha256 `370393ad0c21cc74b681f92b984401729417203aae16234c3cec45557d857c55`),
+  juga di `kyty_latest/build/kyty_emulator_loopguard`.
+- **Cara pakai**: `run_astro_fast.sh` (cache ON, tanpa `--graphics-debug-dump`).
+  Run pertama tetap kompilasi penuh, lalu **exit bersih** (tutup jendela game —
+  jangan `kill -9`) agar `_PipelineCache/PPSA01325.bin` disimpan; run berikutnya
+  memuat cache → mulai cepat, tanpa hitch.
+- `_PipelineCache/PPSA01325.bin` lama (10:59, pra-guard) sudah dipindah ke
+  `.pre-guard.bak` supaya tidak termuat. Signature cache memuat git revision +
+  GPU + driver (auto-invalid kalau berubah); jika mengganti emitter/guard limit,
+  hapus `_PipelineCache/PPSA01325.bin` untuk bersih-bersih.
+- ⚠️ Cache hanya valid untuk kombinasi `KYTY_LOOP_GUARD_LIMIT` yang sama (konstanta
+  guard ikut ke SPIR-V); ganti limit = kompilasi ulang shader terdampak.

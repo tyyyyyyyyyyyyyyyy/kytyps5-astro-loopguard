@@ -24,7 +24,7 @@ menghentikan **GPU hang** saat level loading — sekarang game **bisa dimainkan*
 | GPU | AMD Radeon RX 5700 8 GB (**RDNA1 / Navi10**) |
 | Driver | RADV (Mesa), `VK_ICD_FILENAMES=radeon_icd.json` |
 | Hasil | ✅ **Masuk gameplay** (tanpa GPU hang), frame ~6.000+ |
-| FPS | **2–3 fps** saat kompilasi shader berjalan (naik setelah semua shader dikompilasi) |
+| FPS | **2–3 fps di gameplay** — CPU-bound (Xeon 2013 4c/8t); GPU justru idle (~22%) — analisis & tuning: `docs/FINDINGS.md` §9 |
 
 ---
 
@@ -62,6 +62,12 @@ Bukti sebelum/sesudah (register dump RADV):
 KYTY_LOOP_GUARD_LIMIT=50000 ./patches/run_astro_loopguard.sh
 ```
 
+> 💨 **Recipe harian (lebih cepat)** — `run_astro_fast.sh`: mengaktifkan
+> *pipeline cache* Kyty (`KYTY_FORCE_PIPELINE_CACHE=1`, patch
+> `pipelineCache.cacheforce.diff`) dan melepas dump debug. Run pertama tetap
+> kompilasi penuh (~8-10 menit); **tutup jendela game (exit bersih)** agar cache
+> tersimpan — run berikutnya mulai hampir instan, tanpa hitch kompilasi.
+>
 > ⚠️ **Wajib** `KYTY_LOOP_GUARD_LIMIT=50000` (atau nilai kecil lain). Tanpa itu,
 > default build = 1.000.000 → **masih hang** di RX 5700.
 >
@@ -91,13 +97,15 @@ patches/
     loopguard_v2.py                          ← script patch (idempoten)
     loopguard_internal.diff                  ← diff spirvEmitterInternal.h
     loopguard_program.diff                   ← diff spirvEmitterProgram.cpp
+    pipelineCache.cacheforce.diff            ← diff pipelineCache.cpp (force cache via env)
     spirvEmitterInternal.h                   ← file hasil patch (referensi)
     spirvEmitterProgram.cpp                  ← file hasil patch (referensi)
     vulkanWindow.cpp                         ← file hasil patch barycentric fix (referensi)
     analyze_guard.py                         ← analisis guard per-loop dari dump .spv
     lg_mon3.sh                               ← monitor run (frame/fps/GPU/CPU)
     BUILD.sha256                             ← SHA-256 binary release
-  run_astro_loopguard.sh                     ← launcher
+  run_astro_loopguard.sh                     ← launcher (recipe asli, debug ON)
+  run_astro_fast.sh                          ← launcher harian (pipeline cache ON)
   pressj.sh                                  ← auto-press ✕ (opsional)
 screenshots/astro-gameplay.png               ← bukti masuk gameplay
 licenses/                                    ← lisensi upstream Kyty (GPL-2.0 / MIT)
