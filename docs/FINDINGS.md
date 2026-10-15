@@ -369,3 +369,21 @@ akan tersimpan saat jendela game ditutup normal.
 - Cara baca angka: **GPU% rendah + fps rendah = CPU-bound** (kasus Astro ini);
   GPU ~99% + fps rendah = GPU-bound (turunkan resolusi/efek baru berguna).
 - Bonus: title bar jendela Kyty sudah menampilkan `frame: N, fps: M` real-time.
+
+### 9.6 Bukti GPU bisa 98% (stress test 18:16) ✅
+
+Untuk membuktikan GPU sehat & bisa jenuh (bukan "GPU tidak dipakai"):
+
+- **clpeak** (OpenCL, runtime AMD-APP 3614.0 sudah terpasang di box): hasil RX 5700 —
+  single-precision **6.700 GFLOPS**, half **13.250 GFLOPS**, double **457 GFLOPS**,
+  integer 1.461 GIOPS, bandwidth global terukur — *sehat, sesuai spesifikasi*.
+- **vkmark** (Vulkan) scene `desktop` pada saat bersamaan: 2.910 fps.
+- **MangoHud saat keduanya jalan: `GPU 98%`, 56 °C** — bukti visual:
+  `screenshots/gpu-98-percent-mangohud.png` (repo GitHub) /
+  `/mnt/share/tyo/gpu98_proof_2026-10-15.png` (box).
+- Demo bisa diulang kapan saja: **`bash /mnt/share/tyo/gpu_burn_demo.sh`** (~70 detik;
+  tools persisten di `/mnt/share/tyo/vkmark_tools`, tidak hilang saat reboot).
+- 📌 Kesimpulan: **GPU 98% bisa dicapai oleh beban grafis/compute lain, tapi game
+  Astro membuat GPU hanya ±20–70% karena CPU-nya (Xeon E3-1230v3) yang jadi botol
+  leher** — sesuai §9.1. Di layar, HUD MangoHud sekarang bisa memverifikasi ini
+  live saat main (run berikutnya).

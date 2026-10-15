@@ -105,9 +105,13 @@ patches/
     lg_mon3.sh                               ← monitor run (frame/fps/GPU/CPU)
     BUILD.sha256                             ← SHA-256 binary release
   run_astro_loopguard.sh                     ← launcher (recipe asli, debug ON)
-  run_astro_fast.sh                          ← launcher harian (pipeline cache ON)
+  run_astro_fast.sh                          ← launcher harian (pipeline cache ON + HUD)
   pressj.sh                                  ← auto-press ✕ (opsional)
-screenshots/astro-gameplay.png               ← bukti masuk gameplay
+  gpu_burn_demo.sh                           ← demo "GPU 99%": clpeak + vkmark + MangoHud
+screenshots/
+  astro-gameplay.png                         ← bukti masuk gameplay
+  mangohud-hud.png                           ← HUD MangoHud (contoh)
+  gpu-98-percent-mangohud.png                ← bukti GPU 98% (stress test)
 licenses/                                    ← lisensi upstream Kyty (GPL-2.0 / MIT)
 ```
 
