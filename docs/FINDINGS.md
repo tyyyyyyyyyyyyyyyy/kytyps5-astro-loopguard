@@ -336,3 +336,16 @@ thread + sinkronisasi) memang yang menentukan waktu per frame.
   hapus `_PipelineCache/PPSA01325.bin` untuk bersih-bersih.
 - ⚠️ Cache hanya valid untuk kombinasi `KYTY_LOOP_GUARD_LIMIT` yang sama (konstanta
   guard ikut ke SPIR-V); ganti limit = kompilasi ulang shader terdampak.
+
+### 9.4 Verifikasi cache (17:47) ✅
+
+Run pertama dengan `run_astro_fast.sh` menulis di `/mnt/share/tyo/astro_fast1.log`:
+
+```
+Vulkan pipeline cache: initializing _PipelineCache/PPSA01325.bin
+Vulkan pipeline cache: initialized empty
+```
+
+(bukan lagi `disabled (dirty build)` → patch force bekerja). Run ini sedang
+mengisi cache; **tutup jendela game dengan cara normal** saat selesai supaya
+`_PipelineCache/PPSA01325.bin` tersimpan untuk run-run berikutnya.
